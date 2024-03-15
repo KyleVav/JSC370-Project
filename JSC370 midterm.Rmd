@@ -13,16 +13,23 @@ knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
 \
 In recent years there has been an increasing pessimism about the prospect of 
 owning a home, with younger generations dissatisfied how older generations
-own homes well they cannot afford to. The goal of this project is to 
-examine differences in home ownership between generations through home owernship rates by 
+own homes well they cannot afford to. Younger generations may question whether
+they will ever be able to own their own homes, and compare themselves to 
+the seemingly far favorable conditions for older generations; indeed, home 
+ownership and housing affordability is often cited as a core issue for
+younger generations [3].
+
+\
+The goal of this project is to 
+examine differences in home ownership between generations through home ownership rates by 
 year, age, and locations. The proposed research question is: Have home ownership rates in 
 the United States changed between the generations of Baby Boomers, Gen X, Millenials, 
 and Gen Z?
 
 \
 The dataset that was used to answer this question is a subset of the 
-IPSUM CPS dataset [citation]. The dataset comes from the United States
-Census Current Population SUrvey (CPS) and its supplemental Annual Social and 
+IPSUM CPS dataset. The dataset comes from the United States
+Census Current Population Survey (CPS) and its supplemental Annual Social and 
 Economic Supplement survey (ASEC). The CPS is preformed monthly to different
 households in the US while the ASEC supplement is preformed annualy in March.
 The dataset contains both household and individual level information, meaning
@@ -32,8 +39,29 @@ such as a persons age.
 
 \
 As the entire IPUMS CPS dataset is large and contains many variables
-that are irrelevant to this analysis, a subset of the data was used. Only data
-from the years 1976 to 2023 was used. The variables used in the dataset were:
+that are irrelevant to this analysis, a subset of the data was used containing
+only the variables and year range of interest described in the methods section.
+
+
+## Methods
+
+The methods section includes subsections corresponding to how the data was
+obtained, data cleaning, data wrangling, and the methods for how the plots
+were produced.
+
+### Data Collection
+
+\
+IPUMS CPS allows users to create
+their own subsets, called data extracts, of the full CPS dataset that contain
+variables and year ranges of interest. To create a data extract, a user must
+select variables and year ranges and then wait for a data extract to
+be generated; once the extract is generated it can be downloaded. The creation
+and retrieval of the data extract used in this analysis was preformed through
+the IPUMS API. To create the extract through the API, a post request was made
+using the httr R package with a formatted JSON string that specified the year range
+and variables of interest. The year range was 1976-2023 and the variables of 
+interest were:
 
 \
 -YEAR which is the year an observation was from
@@ -48,19 +76,8 @@ from the years 1976 to 2023 was used. The variables used in the dataset were:
 
 -COUNTY which is the FIP code of the county were the observation was from
 
-
-## Methods
-
 \
-IPUMS CPS allows users to create
-their own subsets, called data extracts, of the full CPS dataset that contain
-variables and year ranges of interest. To create a data extract, a user must
-select variables and year ranges and then wait for a data extract to
-be generated; once the extract is generated it can be downloaded. The creation
-and retrieval of the data extract used in this analysis was preformed through
-the IPUMS API. To create the extract through the API, a post request was made
-using the httr R package with a formatted JSON string that specified the year range
-and variables of interest. Once the data extract request was submitted, a get 
+Once the data extract request was submitted, a get 
 request was used to check whether the data extract had been generated. Finally,
 when the data extract was complete, the data files were downloaded from the
 URLs provided from the content of the get request. The dataset was then loaded
@@ -73,6 +90,8 @@ weights for calculating individual and household level statistics to mitigate
 the sampling bias of the the survey, these weights were also included in the
 dataset as the variables ASECWTH for household level statistics
 and ASECWT for individual level statistics.
+
+### Data Cleaning
 
 \
 Once the dataset was loaded into R, it's dimensions were checked for how
@@ -91,21 +110,33 @@ and 2,991,865 values of 0 which is not a recognized county FIP code. Checking
 the IPUMS data dictionary confirmed that a value of 0 was used for counties that
 did not meet a population threshold due to concerns about deanonymizing
 data. Further investigation also showed that all the missing values in the COUNTY
-variable occurred before 1995. 
+variable occurred before 1995. Removing observations with missing values for
+COUNTY would remove a significant amount of the data. Additionally, the COUNTY
+variable was not used across most of the analysis; therefore, no observations
+were removed.
 
 \
-The number of samples in ages <19 and >90 were small which creates outliers in
-the home ownership rates within these age ranges.
-The number of people buying homes in these age ranges is also very small so comparisons
-within these age ranges are irrelevant to the research question. Additionally, In the United States, 
+Something to note in the dataset is that the values in the categorical variables
+are given by codes that correspond to their meaning, for example, the variable
+OWNERSHIP has a value of "10" when the observation belongs to a household that 
+is owned. The meaning of these codes is easy to find on the IPUMS CPS website,
+so these values were not changed in this analysis.
+
+### Data Wrangling
+
+\
+The number of observations with age >90 were small which created outliers in
+the home ownership rates within these age ranges. Additionally, In the United States, 
 people cannot own property until they reach the age of majority which is 19 in some states. 
-Therefore, these age ranges were removed from the data set. After removing
+Therefore, the age ranges of <19 and >90 were removed from the data set. After removing
 all observations with age less than 19 and greater than 90 there were 5,796,909 observations left.
+Removing these entries means that the population of interest in this analysis are
+adults in the United States between the ages of 19 and 90.
 
 \
 For the analysis, a new variable had to be created referring the generation that individual belongs to. 
-Next, a variable to indicate which generation an observation belongs to was 
-created; the generation age ranges were chosen to be consistent with an 
+There are no official age cutoffs for what defines a generation, so instead
+the generation age ranges were chosen to be consistent with an 
 article by Pew Research Center, the age ranges were: 1946-1964 (Baby Boomer),
 1965-1980 (Gen X), 1981-1996 (Millennial), 1997-2012 (Gen Z) [2]. The generation
 variable was created by subtracting the AGE variable from the YEAR variable to
@@ -115,9 +146,11 @@ create properly, as you might expect, Gen Z had the least amount of observations
 at 86,029 while Baby Boomers had the most 2,147,536	due to the data set containing
 many years before any individual in Gen Z was born. 
 
+
+### Methods for Analysis
+
 \
-Once the data was cleaned, the new variable for Generation
-was created, the analysis could be preformed. 
+Once the data cleaning and wrangling was complete, the analysis could be preformed. 
 To answer the research question, home ownership rates had to be calculated across generations. 
 For this analysis, a home ownership rate was defined:
 
@@ -137,23 +170,35 @@ To find owner occupied households within the dataset both the OWNERSHP and RELAT
 to be used. The OWNERSHP variable in the dataset refers to whether the household the observation
 belongs to is owned or rented; this does not mean that the individual is a 
 homeowners as, for example, an individual living with parents who own a home would
-have a value ownership rather than rented. Instead, both the variables OWNERSHP
-and RELATE have to be used to find homeowners. If OWNERSHP indicates that the observation
+have a value of ownership rather than rented in the OWNERSHIP variable. 
+Instead, both the variables OWNERSHP and RELATE have to be used to find homeowners. 
+If OWNERSHP indicates that the observation
 belong to a household that owns their home and RELATE indicates that the observation
 is the householder then that observation is considered a homeowner.
 
 \
 Finally, visualizations and summaries were created to explore the differences in 
-homeownership rates between generations. First, table summaries were created
-to show homeownership rates by generation in different years. As you might expect, 
-younger generations would have lower home ownership rates simply due to being younger rather 
-than any differences between the generation, therefore looking at the trend of 
-homeownership by year and age will give a better idea of the difference between
-generations. To explore the trend of homeownership rate over time, a line chart was created to show 
+homeownership rates between generations. 
+
+\
+First, table summaries were created
+to show homeownership rates by generation in different years and at different ages. 
+To create the table of homeownership rate by year between generations, homeownership
+rates were calculated for each year grouped by generation. To create the table of
+homeownership rate by age between generations, homeownership rates
+were calculated for each age grouped by generation; for example, the homeownership
+rate for 25 year old Baby Boomers would be calculated using only observations
+were the age was 25 and the observation was a Baby Boomer (these would be from
+years between 1971-1989).
+
+\
+To further explore the trend of homeownership rate over time, a line chart was created to show 
 homeownership by year with a trend line for each generation. 
 Similarly, to explore the trend of homeownership by age, a line chart was created 
-to show homeownership by age with a trend line for each generation. To
-explore difference in homeownership in locations by generation, a map visualization
+to show homeownership by age with a trend line for each generation.
+
+\
+To explore difference in homeownership in locations by generation, a map visualization
 was created to show home ownership at the state level, and at the county level. To
 create these map visualizations, geojson files of USA state and county maps 
 that included FIPS data were used. Home ownership rates were calculated by
@@ -164,7 +209,6 @@ contained homeownerhip rates in all identified counties, and home ownership
 rates in states not including identified counties within the state. Similarly,
 any county with <50 observations in any generation was combined with the
 non-identified counties within state borders.
-
 
 ```{r warning=FALSE, echo=FALSE, output='none', message=FALSE}
 library(ipumsr)
@@ -994,12 +1038,18 @@ Minneapolis, MN: IPUMS, 2023. https://doi.org/10.18128/D030.V11.0
 \
 Generation Ranges:
 
-[1] https://www.pewresearch.org/short-reads/2019/01/17/where-millennials-end-and-generation-z-begins/ 
+[1] Dimock, M. (2019, January 17). Defining generations: Where millennials end and generation Z begins. Pew Research Center. https://www.pewresearch.org/short-reads/2019/01/17/where-millennials-end-and-generation-z-begins/  
 
 \
 Home Ownership Definition:
 
-[2] https://www.census.gov/housing/hvs/data/histtabs.html 
+[2] Definitions and Explanations. United States Census. https://www.census.gov/housing/hvs/definitions.pdf 
+
+\
+Home Ownership as a voting issue:
+
+[3] O’Donnell, K. (2022, August 2). Young people are pissed off: Housing crush sours millennial voters. Politico. https://www.politico.com/news/2022/08/02/housing-millennials-biden-economy-00047704  
+
 
 \
 Geojson for states:
